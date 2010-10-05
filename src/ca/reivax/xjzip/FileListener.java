@@ -2,10 +2,8 @@ package ca.reivax.xjzip;
 
 import java.io.File;
 
-public class FileListener {
+public interface FileListener {
 
-	public void fileChanged(File file) {
-		
-	}
+	public void fileChanged(File file);
 
 }

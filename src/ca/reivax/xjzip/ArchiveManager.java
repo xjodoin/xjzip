@@ -3,30 +3,43 @@ package ca.reivax.xjzip;
 import java.awt.Desktop;
 import java.io.IOException;
 
-import org.apache.pivot.collections.ArrayList;
 import org.apache.pivot.collections.Map;
 import org.apache.pivot.wtk.Application;
 import org.apache.pivot.wtk.Component;
 import org.apache.pivot.wtk.ComponentMouseButtonListener;
 import org.apache.pivot.wtk.DesktopApplicationContext;
 import org.apache.pivot.wtk.Display;
+import org.apache.pivot.wtk.MessageType;
 import org.apache.pivot.wtk.Mouse.Button;
+import org.apache.pivot.wtk.Prompt;
 import org.apache.pivot.wtk.TableView;
 import org.apache.pivot.wtk.Window;
 import org.apache.pivot.wtkx.WTKXSerializer;
 
 import de.schlichtherle.io.File;
 
-public class ArchiveManager implements Application {
+public class ArchiveManager implements Application, FileListener {
 
 	private Window window;
+
+	private FileMonitor fileMonitor = new FileMonitor(500);
+
+	private File currentEntry;
 
 	@Override
 	public void startup(Display display, Map<String, String> properties)
 			throws Exception {
+
+		File zipFile = new File(
+				"C:/Documents and Settings/Xavier/Bureau/Bureau.zip");
+
+		fileMonitor.addListener(this);
+
 		WTKXSerializer wtkxSerializer = new WTKXSerializer();
 		window = (Window) wtkxSerializer
 				.readObject(this, "archivemanager.wtkx");
+
+		window.setTitle(zipFile.getName());
 
 		TableView tableView = (TableView) wtkxSerializer.get("tableView");
 
@@ -40,24 +53,24 @@ public class ArchiveManager implements Application {
 						if (count == 2) {
 							TableView tableView = (TableView) component;
 							Object selectedRow = tableView.getSelectedRow();
-							if (selectedRow instanceof File
-									&& ((File) selectedRow).isDirectory()) {
-								tableView.setTableData(new ArrayList<File>(
-										(File[]) ((File) selectedRow)
-												.listFiles()));
+							if (selectedRow instanceof FileView
+									&& ((FileView) selectedRow).isDirectory()) {
+
+								tableView.setTableData(((FileView) selectedRow)
+										.listFiles());
 							} else {
 								try {
-									File item = (File) selectedRow;
+									currentEntry = ((FileView) selectedRow)
+											.getFile();
 
 									java.io.File createTempFile = File
 											.createTempFile("tmp",
-													item.getName());
+													currentEntry.getName());
 									createTempFile.deleteOnExit();
 
-									item.copyTo(createTempFile);
+									currentEntry.copyTo(createTempFile);
 
-									// fileWatcherService.scheduleAtFixedRate(new
-									// Run, initialDelay, period, unit)
+									fileMonitor.addFile(createTempFile);
 
 									Desktop.getDesktop().open(createTempFile);
 
@@ -86,12 +99,7 @@ public class ArchiveManager implements Application {
 
 				});
 
-		File zipFile = new File(
-				"C:/Documents and Settings/Xavier/Bureau/Bureau.zip");
-
-		File[] listFiles = (File[]) zipFile.listFiles();
-
-		tableView.setTableData(new ArrayList<File>(listFiles));
+		tableView.setTableData(new FileView(zipFile).listFiles());
 
 		window.open(display);
 	}
@@ -115,6 +123,14 @@ public class ArchiveManager implements Application {
 
 	public static void main(String[] args) {
 		DesktopApplicationContext.main(ArchiveManager.class, args);
+	}
+
+	@Override
+	public void fileChanged(java.io.File file) {
+
+		Prompt.prompt(MessageType.INFO, "The file has been updated", window);
+		currentEntry.copyFrom(file);
+
 	}
 
 }
