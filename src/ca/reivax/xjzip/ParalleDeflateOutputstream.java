@@ -134,9 +134,14 @@ public class ParalleDeflateOutputstream extends FilterOutputStream {
 	                    
 	                    rc = compressor.deflate(JZlib.Z_FINISH);
 
-//	                    if (rc != JZlib.Z_OK) {
-//	    					throw new ZStreamException("deflating: " + compressor.msg);
-//	    				}
+//	                    rc = compressor.Deflate(FlushType.Finish);
+//
+//	                    if (rc != ZlibConstants.Z_STREAM_END && rc != ZlibConstants.Z_OK)
+//	                        throw new Exception("deflating: " + compressor.Message);
+	                    
+	                    if (rc != JZlib.Z_STREAM_END && rc != JZlib.Z_OK) {
+	    					throw new ZStreamException("deflating: " + compressor.msg);
+	    				}
 	                    
 	                    if (buffer.length - compressor.avail_out > 0)
 	                    {
