@@ -38,6 +38,7 @@ public class ParalleDeflateOutputstream extends FilterOutputStream {
 			if (len == 0)
 				return new byte[0];
 
+			z.deflateInit(JZlib.Z_DEFAULT_COMPRESSION, false);
 			z.next_in = b;
 			z.next_in_index = off;
 			z.avail_in = len;
@@ -77,6 +78,8 @@ public class ParalleDeflateOutputstream extends FilterOutputStream {
 	@Override
 	public void write(byte[] b, int off, int len) throws IOException {
 
+		System.out.println("test");
+		
 		startWriterThread();
 		
 		WorkItem workItem = new WorkItem(b, off, len);
@@ -99,9 +102,10 @@ public class ParalleDeflateOutputstream extends FilterOutputStream {
 							
 							Future<byte[]> poll = executorCompletionService.poll(200, TimeUnit.MILLISECONDS);
 							
-							if(poll!=null)
+							while(poll!=null)
 							{
 								out.write(poll.get());	
+								poll = executorCompletionService.poll(200, TimeUnit.MILLISECONDS);
 							}
 							
 						}
@@ -120,6 +124,7 @@ public class ParalleDeflateOutputstream extends FilterOutputStream {
 //	                    compressor.NextOut = 0;
 //	                    compressor.AvailableBytesOut = buffer.Length;
 	                   
+	                    compressor.next_in = new byte[0];
 	                    compressor.next_in_index = 0;
 	                    compressor.avail_in = 0;
 
@@ -129,9 +134,9 @@ public class ParalleDeflateOutputstream extends FilterOutputStream {
 	                    
 	                    rc = compressor.deflate(JZlib.Z_FINISH);
 
-	                    if (rc != JZlib.Z_OK) {
-	    					throw new ZStreamException("deflating: " + compressor.msg);
-	    				}
+//	                    if (rc != JZlib.Z_OK) {
+//	    					throw new ZStreamException("deflating: " + compressor.msg);
+//	    				}
 	                    
 	                    if (buffer.length - compressor.avail_out > 0)
 	                    {
@@ -155,6 +160,15 @@ public class ParalleDeflateOutputstream extends FilterOutputStream {
 	public void flush() throws IOException {
 		super.flush();
 		writerThreadActive = false;
+		
+		while (writer.isAlive()) {
+			try {
+				Thread.sleep(200);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		
 	}
 
 }
