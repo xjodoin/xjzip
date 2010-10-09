@@ -17,35 +17,38 @@ import com.jcraft.jzlib.ZStreamException;
 
 public class ParalleDeflateOutputstream extends FilterOutputStream {
 
-	private static class WorkItem implements Callable<byte[]> {
+	private static class WorkItem implements Callable<WorkItem> {
 
 		private ZStream z = new ZStream();
 
-		private final byte[] b;
+		private final byte[] buf;
 		private final int off;
 		private final int len;
 
-		public WorkItem(byte b[], int off, int len) {
-			this.b = b;
+		private final int sequence;
+
+		public WorkItem(int sequence,byte b[], int off, int len) {
+			this.sequence = sequence;
+			this.buf = b;
 			this.off = off;
 			this.len = len;
 
 		}
 
 		@Override
-		public byte[] call() throws Exception {
+		public WorkItem call() throws Exception {
 
 			if (len == 0)
-				return new byte[0];
+				return this;
 
-			z.deflateInit(JZlib.Z_DEFAULT_COMPRESSION, false);
-			z.next_in = b;
+			z.deflateInit(JZlib.Z_DEFAULT_COMPRESSION);
+			z.next_in = buf;
 			z.next_in_index = off;
 			z.avail_in = len;
 
-			z.next_out = new byte[b.length];
+			z.next_out = new byte[buf.length];
 			z.next_out_index = 0;
-			z.avail_out = b.length;
+			z.avail_out = buf.length;
 
 			int err;
 
@@ -58,31 +61,31 @@ public class ParalleDeflateOutputstream extends FilterOutputStream {
 
 			err = z.deflate(JZlib.Z_SYNC_FLUSH);
 
-			return Arrays.copyOfRange(z.next_out, 0, (int) z.total_out);
+//			return Arrays.copyOfRange(z.next_out, 0, buf.length - z.avail_out);
 
+			return this;
 		}
 	}
 
-	private ExecutorCompletionService<byte[]> executorCompletionService;
+	private ExecutorCompletionService<WorkItem> executorCompletionService;
 	private boolean writerThreadActive;
 	private Thread writer;
+	private int count = 0;
 	
 	public ParalleDeflateOutputstream(OutputStream out) {
 		super(out);
 
-		executorCompletionService = new ExecutorCompletionService<byte[]>(
-				Executors.newSingleThreadExecutor(),new LinkedBlockingQueue<Future<byte[]>>(10));
+		executorCompletionService = new ExecutorCompletionService<WorkItem>(
+				Executors.newSingleThreadExecutor(),new LinkedBlockingQueue<Future<WorkItem>>(10));
 
 	}
 
 	@Override
 	public void write(byte[] b, int off, int len) throws IOException {
 
-		System.out.println("test");
-		
 		startWriterThread();
-		
-		WorkItem workItem = new WorkItem(b, off, len);
+		WorkItem workItem = new WorkItem(count,Arrays.copyOf(b, len), off, len);
+		count++;
 		executorCompletionService.submit(workItem);
 	}
 
@@ -100,11 +103,13 @@ public class ParalleDeflateOutputstream extends FilterOutputStream {
 					
 						while (writerThreadActive) {
 							
-							Future<byte[]> poll = executorCompletionService.poll(200, TimeUnit.MILLISECONDS);
+							Future<WorkItem> poll = executorCompletionService.poll(200, TimeUnit.MILLISECONDS);
 							
 							while(poll!=null)
 							{
-								out.write(poll.get());	
+								WorkItem workItem = poll.get();
+								System.out.println(workItem.sequence);
+								out.write(workItem.z.next_out,0,(int) workItem.z.total_out);	
 								poll = executorCompletionService.poll(200, TimeUnit.MILLISECONDS);
 							}
 							
