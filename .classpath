@@ -9,7 +9,7 @@
 	<classpathentry kind="lib" path="pivot-web-server-1.4.jar"/>
 	<classpathentry kind="lib" path="pivot-wtk-1.4.jar" sourcepath="C:/Documents and Settings/Xavier/Mes documents/Téléchargements/apache-pivot-1.4-src.zip"/>
 	<classpathentry kind="lib" path="pivot-wtk-terra-1.4.jar"/>
-	<classpathentry kind="lib" path="truezip-6.8.1.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/jzlib"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/truezip"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
