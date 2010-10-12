@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.zip.DeflaterInputStream;
 import java.util.zip.DeflaterOutputStream;
+import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
 import com.jcraft.jzlib.JZlib;
@@ -25,7 +26,7 @@ public class TestParallel {
 				.getResourceAsStream("ParallelDeflateOutputStream.cs");
 
 		java.io.FileOutputStream byteArrayOutputStream = new java.io.FileOutputStream("C:/testparajava.xml");
-		ParalleDeflateOutputstream deflaterOutputStream = new ParalleDeflateOutputstream(
+		ParallelDeflateOutputStream deflaterOutputStream = new ParallelDeflateOutputStream(
 				byteArrayOutputStream);
 
 		{
@@ -39,20 +40,20 @@ public class TestParallel {
 
 		deflaterOutputStream.close();
 
-//		InflaterInputStream inflaterInputStream = new InflaterInputStream(
-//				new FileInputStream(new File("c:/testparajava.xml")));
-//
-//		OutputStream outputStream = new FileOutputStream(new File("testinfjava.xml"));
-//
-//		byte[] buf = new byte[128];
-//		int count = 0;
-//		while ((count = inflaterInputStream.read(buf)) != -1) {
-//
-//			outputStream.write(buf, 0, count);
-//		}
-//		
-//		inflaterInputStream.close();
-//		outputStream.close();
+		InflaterInputStream inflaterInputStream = new InflaterInputStream(
+				new FileInputStream(new File("c:/testparajava.xml")),new Inflater(true));
+
+		OutputStream outputStream = new FileOutputStream(new File("testinfjava.xml"));
+
+		byte[] buf = new byte[128];
+		int count = 0;
+		while ((count = inflaterInputStream.read(buf)) != -1) {
+
+			outputStream.write(buf, 0, count);
+		}
+		
+		inflaterInputStream.close();
+		outputStream.close();
 		
 	}
 
