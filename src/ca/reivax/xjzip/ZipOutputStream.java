@@ -126,14 +126,6 @@ public class ZipOutputStream extends BasicZipOutputStream {
         return super.getComment();
     }
     
-    public synchronized void setLevel(int level) {
-	super.setLevel(level);
-    }
-
-    public synchronized int getLevel() {
-        return super.getLevel();
-    }
-
     public synchronized int getMethod() {
         return super.getMethod();
     }

@@ -46,8 +46,8 @@ public class ParallelDeflateOutputStream extends FilterOutputStream {
 
 			ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-			z.deflateInit(JZlib.Z_DEFAULT_COMPRESSION,true);
-			
+			z.deflateInit(JZlib.Z_DEFAULT_COMPRESSION, true);
+
 			int err;
 			z.next_in = b;
 			z.next_in_index = off;
@@ -78,16 +78,18 @@ public class ParallelDeflateOutputStream extends FilterOutputStream {
 
 	private ExecutorCompletionService<byte[]> executorCompletionService;
 	private ExecutorService newFixedThreadPool;
-	
+
 	private AtomicBoolean writerThreadActive = new AtomicBoolean();
 	private Thread writer;
 	private int count = 0;
-	
+	private long bytesRead = 0;
+	private long bytesWritten = 0;
 
 	public ParallelDeflateOutputStream(OutputStream out) {
 		super(out);
 
-		newFixedThreadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+		newFixedThreadPool = Executors.newFixedThreadPool(Runtime.getRuntime()
+				.availableProcessors());
 		executorCompletionService = new ExecutorCompletionService<byte[]>(
 				newFixedThreadPool);
 
@@ -99,6 +101,8 @@ public class ParallelDeflateOutputStream extends FilterOutputStream {
 		startWriterThread();
 		WorkItem workItem = new WorkItem(Arrays.copyOf(b, len), off, len);
 		count++;
+		System.out.println(count);
+		bytesRead += len;
 		executorCompletionService.submit(workItem);
 	}
 
@@ -106,14 +110,14 @@ public class ParallelDeflateOutputStream extends FilterOutputStream {
 
 		if (!writerThreadActive.get()) {
 			writerThreadActive.set(true);
-			
+
 			writer = new Thread("Parallel Deflate writer thread") {
 				@Override
 				public void run() {
 					try {
 
 						int writeCount = 0;
-						
+
 						while (true) {
 
 							Future<byte[]> poll = executorCompletionService
@@ -121,12 +125,15 @@ public class ParallelDeflateOutputStream extends FilterOutputStream {
 
 							if (poll != null) {
 								byte[] buf = poll.get();
+								bytesWritten += buf.length;
 								out.write(buf);
 								writeCount++;
+								System.out
+										.println("write count: " + writeCount);
 							}
-							
-							if(!writerThreadActive.get() && writeCount == count)
-							{
+
+							if (!writerThreadActive.get()
+									&& writeCount == count) {
 								break;
 							}
 						}
@@ -140,7 +147,7 @@ public class ParallelDeflateOutputStream extends FilterOutputStream {
 						byte[] buffer = new byte[128];
 						ZStream compressor = new ZStream();
 						int rc = compressor.deflateInit(
-								JZlib.Z_DEFAULT_COMPRESSION,true);
+								JZlib.Z_DEFAULT_COMPRESSION, true);
 
 						compressor.next_in = new byte[0];
 						compressor.next_in_index = 0;
@@ -160,6 +167,8 @@ public class ParallelDeflateOutputStream extends FilterOutputStream {
 						if (buffer.length - compressor.avail_out > 0) {
 							out.write(buffer, 0, buffer.length
 									- compressor.avail_out);
+
+							bytesWritten += (buffer.length - compressor.avail_out);
 						}
 
 						compressor.deflateEnd();
@@ -177,7 +186,6 @@ public class ParallelDeflateOutputStream extends FilterOutputStream {
 
 	@Override
 	public void flush() throws IOException {
-		super.flush();
 		writerThreadActive.set(false);
 
 		while (writer.isAlive()) {
@@ -188,12 +196,27 @@ public class ParallelDeflateOutputStream extends FilterOutputStream {
 			}
 		}
 
+		super.flush();
+
 	}
-	
+
 	@Override
 	public void close() throws IOException {
 		super.close();
 		newFixedThreadPool.shutdown();
+	}
+
+	public void reset() {
+		// TODO Auto-generated method stub
+
+	}
+
+	public long getBytesWritten() {
+		return bytesWritten;
+	}
+
+	public long getBytesRead() {
+		return bytesRead;
 	}
 
 }
