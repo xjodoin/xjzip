@@ -16,6 +16,7 @@
 
 package ca.reivax.xjzip;
 
+import java.io.FileNotFoundException;
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -29,6 +30,7 @@ import java.util.zip.CRC32;
 import java.util.zip.Deflater;
 import java.util.zip.ZipException;
 
+import de.schlichtherle.io.FileOutputStream;
 import de.schlichtherle.io.util.LEDataOutputStream;
 import de.schlichtherle.util.zip.DefaultDeflaterStream;
 import de.schlichtherle.util.zip.DeflaterStream;
@@ -101,7 +103,7 @@ public class BasicZipOutputStream2 extends FilterOutputStream {
 	 */
 	private boolean deflate;
 
-	private final DeflaterStream deflaterStream;
+	private DeflaterStream deflaterStream;
 
 	/**
 	 * Creates a new ZIP output stream decorating the given output stream, using
@@ -113,9 +115,13 @@ public class BasicZipOutputStream2 extends FilterOutputStream {
 	public BasicZipOutputStream2(final OutputStream out)
 			throws NullPointerException {
 		super(toLEDataOutputStream(out));
-		this.deflaterStream = new DefaultDeflaterStream(super.out,
-				new Deflater(Deflater.DEFAULT_COMPRESSION, true));
-
+		try {
+			this.deflaterStream = new ParallelDeflateOutputStream(
+					new MultipleOutputStream(super.out,new java.io.FileOutputStream("/home/xjodoin/test.compress")));
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		// Check parameters (fail fast).
 		if (out == null)
 			throw new NullPointerException();
@@ -134,8 +140,13 @@ public class BasicZipOutputStream2 extends FilterOutputStream {
 	public BasicZipOutputStream2(final OutputStream out, final String charset)
 			throws NullPointerException, UnsupportedEncodingException {
 		super(toLEDataOutputStream(out));
-		this.deflaterStream = new DefaultDeflaterStream(super.out,
-				new Deflater(Deflater.DEFAULT_COMPRESSION, true));
+		try {
+			this.deflaterStream = new ParallelDeflateOutputStream(
+					new MultipleOutputStream(super.out,new java.io.FileOutputStream("/home/xjodoin/test.compress")));
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
 		// Check parameters (fail fast).
 		if (out == null || charset == null)
@@ -506,6 +517,9 @@ public class BasicZipOutputStream2 extends FilterOutputStream {
 
 				deflaterStream.finish();
 
+				System.out.println("CRC entry "
+						+ (crc.getValue() == deflaterStream.getCrc32()
+								.getValue()));
 				entry.setCrc(crc.getValue());
 				entry.setCompressedSize(deflaterStream.getBytesWritten());
 				entry.setSize(deflaterStream.getBytesRead());

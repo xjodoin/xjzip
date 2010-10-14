@@ -5,14 +5,16 @@ import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.zip.CRC32;
 
 import com.jcraft.jzlib.JZlib;
 import com.jcraft.jzlib.ZStream;
@@ -23,7 +25,7 @@ import de.schlichtherle.util.zip.DeflaterStream;
 public class ParallelDeflateOutputStream extends FilterOutputStream implements
 		DeflaterStream {
 
-	private static class WorkItem implements Callable<byte[]> {
+	private static class WorkItem implements Callable<WorkItem> {
 
 		private ZStream z = new ZStream();
 
@@ -34,7 +36,12 @@ public class ParallelDeflateOutputStream extends FilterOutputStream implements
 		protected int bufsize = 1024;
 		protected byte[] buf = new byte[bufsize];
 
-		public WorkItem(byte b[], int off, int len) {
+		private ByteArrayOutputStream out;
+
+		private final int sequence;
+
+		public WorkItem(int sequence, byte b[], int off, int len) {
+			this.sequence = sequence;
 			this.b = b;
 			this.off = off;
 			this.len = len;
@@ -42,12 +49,12 @@ public class ParallelDeflateOutputStream extends FilterOutputStream implements
 		}
 
 		@Override
-		public byte[] call() throws Exception {
+		public WorkItem call() throws Exception {
 
 			if (len == 0)
-				return new byte[0];
+				return this;
 
-			ByteArrayOutputStream out = new ByteArrayOutputStream();
+			out = new ByteArrayOutputStream();
 
 			z.deflateInit(JZlib.Z_DEFAULT_COMPRESSION, true);
 
@@ -75,11 +82,11 @@ public class ParallelDeflateOutputStream extends FilterOutputStream implements
 
 			out.write(buf, 0, bufsize - z.avail_out);
 
-			return out.toByteArray();
+			return this;
 		}
 	}
 
-	private ExecutorCompletionService<byte[]> executorCompletionService;
+	private ExecutorCompletionService<WorkItem> executorCompletionService;
 	private ExecutorService newFixedThreadPool;
 
 	private AtomicBoolean writerThreadActive = new AtomicBoolean();
@@ -88,12 +95,14 @@ public class ParallelDeflateOutputStream extends FilterOutputStream implements
 	private long bytesRead = 0;
 	private long bytesWritten = 0;
 
+	private CRC32 crc32 = new CRC32();
+
 	public ParallelDeflateOutputStream(OutputStream out) {
 		super(out);
 
 		newFixedThreadPool = Executors.newFixedThreadPool(Runtime.getRuntime()
 				.availableProcessors());
-		executorCompletionService = new ExecutorCompletionService<byte[]>(
+		executorCompletionService = new ExecutorCompletionService<WorkItem>(
 				newFixedThreadPool);
 
 	}
@@ -102,11 +111,12 @@ public class ParallelDeflateOutputStream extends FilterOutputStream implements
 	public void write(byte[] b, int off, int len) throws IOException {
 
 		startWriterThread();
-		WorkItem workItem = new WorkItem(Arrays.copyOf(b, len), off, len);
+		WorkItem workItem = new WorkItem(count, Arrays.copyOf(b, len), off, len);
 		count++;
 		System.out.println(count);
 		bytesRead += len;
 		executorCompletionService.submit(workItem);
+		crc32.update(b, off, len);
 	}
 
 	private void startWriterThread() {
@@ -115,6 +125,9 @@ public class ParallelDeflateOutputStream extends FilterOutputStream implements
 			writerThreadActive.set(true);
 
 			writer = new Thread("Parallel Deflate writer thread") {
+
+				Map<Integer, WorkItem> waitingToWrite = new HashMap<Integer, ParallelDeflateOutputStream.WorkItem>();
+
 				@Override
 				public void run() {
 					try {
@@ -123,16 +136,22 @@ public class ParallelDeflateOutputStream extends FilterOutputStream implements
 
 						while (true) {
 
-							Future<byte[]> poll = executorCompletionService
+							Future<WorkItem> poll = executorCompletionService
 									.poll(200, TimeUnit.MILLISECONDS);
 
 							if (poll != null) {
-								byte[] buf = poll.get();
-								bytesWritten += buf.length;
-								out.write(buf);
-								writeCount++;
-								System.out
-										.println("write count: " + writeCount);
+								WorkItem workItem = poll.get();
+
+								if (workItem.sequence == writeCount) {
+									do {
+										writeCount = writeItem(writeCount,
+												workItem);
+									} while ((workItem = waitingToWrite
+											.remove(writeCount)) != null);
+								} else {
+									waitingToWrite.put(workItem.sequence,
+											workItem);
+								}
 							}
 
 							if (!writerThreadActive.get()
@@ -180,6 +199,17 @@ public class ParallelDeflateOutputStream extends FilterOutputStream implements
 						e.printStackTrace();
 					}
 				}
+
+				private int writeItem(int writeCount, WorkItem workItem)
+						throws IOException {
+					byte[] buf = workItem.out.toByteArray();
+					bytesWritten += buf.length;
+					out.write(buf);
+					writeCount++;
+					System.out.println("sequence write: " + workItem.sequence);
+					return writeCount;
+				}
+
 			};
 			writer.start();
 
@@ -231,6 +261,11 @@ public class ParallelDeflateOutputStream extends FilterOutputStream implements
 			}
 		}
 
+	}
+
+	@Override
+	public CRC32 getCrc32() {
+		return crc32;
 	}
 
 }
