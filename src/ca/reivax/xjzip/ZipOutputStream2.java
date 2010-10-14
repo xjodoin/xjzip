@@ -51,7 +51,7 @@ import de.schlichtherle.util.zip.ZipFile;
  * @version $Id: ZipOutputStream.java,v 1.4 2010/08/20 13:09:38 christian_schlichtherle Exp $
  * @see ZipFile
  */
-public class ZipOutputStream extends BasicZipOutputStream {
+public class ZipOutputStream2 extends BasicZipOutputStream2 {
     
     /**
      * Creates a new ZIP output stream decorating the given output stream,
@@ -59,7 +59,7 @@ public class ZipOutputStream extends BasicZipOutputStream {
      *
      * @throws NullPointerException If {@code out} is {@code null}.
      */
-    public ZipOutputStream(
+    public ZipOutputStream2(
             final OutputStream out)
     throws NullPointerException {
         super(out);
@@ -73,7 +73,7 @@ public class ZipOutputStream extends BasicZipOutputStream {
      * @throws UnsupportedEncodingException If charset is not supported by
      *         this JVM.
      */
-    public ZipOutputStream(
+    public ZipOutputStream2(
             final OutputStream out,
             final String charset)
     throws  NullPointerException,
@@ -95,7 +95,7 @@ public class ZipOutputStream extends BasicZipOutputStream {
     public synchronized Enumeration entries() {
 	return new Enumeration() {
 	    Enumeration e = Collections.enumeration(Collections.list(
-                    ZipOutputStream.super.entries()));
+                    ZipOutputStream2.super.entries()));
 
 	    public boolean hasMoreElements() {
 		return e.hasMoreElements();
@@ -126,6 +126,14 @@ public class ZipOutputStream extends BasicZipOutputStream {
         return super.getComment();
     }
     
+    public synchronized void setLevel(int level) {
+	super.setLevel(level);
+    }
+
+//    public synchronized int getLevel() {
+//        return super.getLevel();
+//    }
+
     public synchronized int getMethod() {
         return super.getMethod();
     }

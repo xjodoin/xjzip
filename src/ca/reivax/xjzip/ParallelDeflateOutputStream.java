@@ -18,7 +18,10 @@ import com.jcraft.jzlib.JZlib;
 import com.jcraft.jzlib.ZStream;
 import com.jcraft.jzlib.ZStreamException;
 
-public class ParallelDeflateOutputStream extends FilterOutputStream {
+import de.schlichtherle.util.zip.DeflaterStream;
+
+public class ParallelDeflateOutputStream extends FilterOutputStream implements
+		DeflaterStream {
 
 	private static class WorkItem implements Callable<byte[]> {
 
@@ -186,16 +189,7 @@ public class ParallelDeflateOutputStream extends FilterOutputStream {
 
 	@Override
 	public void flush() throws IOException {
-		writerThreadActive.set(false);
-
-		while (writer.isAlive()) {
-			try {
-				Thread.sleep(200);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-
+		finish();
 		super.flush();
 
 	}
@@ -217,6 +211,26 @@ public class ParallelDeflateOutputStream extends FilterOutputStream {
 
 	public long getBytesRead() {
 		return bytesRead;
+	}
+
+	@Override
+	public void setLevel(int level) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void finish() throws IOException {
+		writerThreadActive.set(false);
+
+		while (writer.isAlive()) {
+			try {
+				Thread.sleep(200);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+
 	}
 
 }

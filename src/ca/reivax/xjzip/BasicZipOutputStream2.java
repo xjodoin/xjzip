@@ -16,6 +16,7 @@
 
 package ca.reivax.xjzip;
 
+import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
@@ -25,13 +26,17 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.zip.CRC32;
+import java.util.zip.Deflater;
 import java.util.zip.ZipException;
 
 import de.schlichtherle.io.util.LEDataOutputStream;
+import de.schlichtherle.util.zip.DefaultDeflaterStream;
+import de.schlichtherle.util.zip.DeflaterStream;
 import de.schlichtherle.util.zip.UInt;
 import de.schlichtherle.util.zip.UShort;
 import de.schlichtherle.util.zip.ZIP;
 import de.schlichtherle.util.zip.ZipEntry;
+import de.schlichtherle.util.zip.ZipOutputStream;
 
 /**
  * <em>This class is <b>not</b> intended for public use!</em> The methods in
@@ -46,7 +51,7 @@ import de.schlichtherle.util.zip.ZipEntry;
  * @since TrueZIP 6.4
  * @see ZipOutputStream
  */
-public class BasicZipOutputStream extends ParallelDeflateOutputStream {
+public class BasicZipOutputStream2 extends FilterOutputStream {
 
 	/**
 	 * The default character set used for entry names and comments in ZIP
@@ -61,9 +66,6 @@ public class BasicZipOutputStream extends ParallelDeflateOutputStream {
 
 	/** CRC instance to avoid parsing DEFLATED data twice. */
 	private final CRC32 crc = new CRC32();
-
-	/** This buffer holds deflated data for output. */
-	private final byte[] dbuf = new byte[ZIP.FLATER_BUF_LENGTH];
 
 	private final byte[] sbuf = new byte[1];
 
@@ -99,6 +101,8 @@ public class BasicZipOutputStream extends ParallelDeflateOutputStream {
 	 */
 	private boolean deflate;
 
+	private final DeflaterStream deflaterStream;
+
 	/**
 	 * Creates a new ZIP output stream decorating the given output stream, using
 	 * the {@value #DEFAULT_CHARSET} charset.
@@ -106,9 +110,11 @@ public class BasicZipOutputStream extends ParallelDeflateOutputStream {
 	 * @throws NullPointerException
 	 *             If {@code out} is {@code null}.
 	 */
-	public BasicZipOutputStream(final OutputStream out)
+	public BasicZipOutputStream2(final OutputStream out)
 			throws NullPointerException {
 		super(toLEDataOutputStream(out));
+		this.deflaterStream = new DefaultDeflaterStream(super.out,
+				new Deflater(Deflater.DEFAULT_COMPRESSION, true));
 
 		// Check parameters (fail fast).
 		if (out == null)
@@ -125,9 +131,11 @@ public class BasicZipOutputStream extends ParallelDeflateOutputStream {
 	 * @throws UnsupportedEncodingException
 	 *             If {@code charset} is not supported by this JVM.
 	 */
-	public BasicZipOutputStream(final OutputStream out, final String charset)
+	public BasicZipOutputStream2(final OutputStream out, final String charset)
 			throws NullPointerException, UnsupportedEncodingException {
 		super(toLEDataOutputStream(out));
+		this.deflaterStream = new DefaultDeflaterStream(super.out,
+				new Deflater(Deflater.DEFAULT_COMPRESSION, true));
 
 		// Check parameters (fail fast).
 		if (out == null || charset == null)
@@ -190,6 +198,20 @@ public class BasicZipOutputStream extends ParallelDeflateOutputStream {
 	 */
 	public void setComment(String comment) {
 		this.comment = comment;
+	}
+
+	// /**
+	// * Returns the compression level currently used.
+	// */
+	// public int getLevel() {
+	// return def.getLevel();
+	// }
+
+	/**
+	 * Sets the compression level for subsequent entries.
+	 */
+	public void setLevel(int level) {
+		deflaterStream.setLevel(level);
 	}
 
 	/**
@@ -435,7 +457,8 @@ public class BasicZipOutputStream extends ParallelDeflateOutputStream {
 			if (len == 0) // let negative values pass for an exception
 				return;
 			if (deflate) {
-				super.write(b, off, len);
+				// Fast implementation.
+				deflaterStream.write(b, off, len);
 				crc.update(b, off, len);
 			} else {
 				out.write(b, off, len);
@@ -480,12 +503,14 @@ public class BasicZipOutputStream extends ParallelDeflateOutputStream {
 
 		case ZIP.DEFLATED:
 			if (deflate) {
-				super.flush();
-				entry.setCrc(crc.getValue());
-				entry.setCompressedSize(getBytesWritten());
-				entry.setSize(getBytesRead());
 
-				reset();
+				deflaterStream.finish();
+
+				entry.setCrc(crc.getValue());
+				entry.setCompressedSize(deflaterStream.getBytesWritten());
+				entry.setSize(deflaterStream.getBytesRead());
+
+				deflaterStream.reset();
 			} else {
 				// Note: There is no way to check whether the written
 				// data matches the crc, the compressed size and the

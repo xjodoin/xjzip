@@ -1,31 +1,29 @@
 package ca.reivax.xjzip;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+import de.schlichtherle.io.FileInputStream;
 import de.schlichtherle.util.zip.ZipEntry;
 
 public class TestZip {
+	public static void main(String[] args) throws NullPointerException,
+			IOException {
+		FileOutputStream out = new FileOutputStream(
+				"/home/xjodoin/Bureau/test.zip");
+		ZipOutputStream2 zipOutputStream2 = new ZipOutputStream2(out);
+		zipOutputStream2.putNextEntry(new ZipEntry("tomcat.log"));
 
-	public static void main(String[] args) throws NullPointerException, IOException {
-		ZipOutputStream zipOutputStream = new ZipOutputStream(new FileOutputStream("C:/Documents and Settings/Xavier/Bureau/test.zip"));
-		
-		zipOutputStream.putNextEntry(new ZipEntry("Test.pdf"));
-		
-		FileInputStream fileInputStream = new FileInputStream("C:/Documents and Settings/Xavier/Bureau/Test.pdf");
-		byte[] buf = new byte[1024];
+		FileInputStream fileInputStream = new FileInputStream(
+				"/home/xjodoin/Bureau/tomcat.log");
 		int count = 0;
-		
-		while((count = fileInputStream.read(buf))!= -1)
-		{
-			zipOutputStream.write(buf, 0, count);
+		byte[] buf = new byte[1024];
+		while ((count = fileInputStream.read(buf)) != -1) {
+			zipOutputStream2.write(buf, 0, count);
 		}
-		
-		zipOutputStream.closeEntry();
-		zipOutputStream.close();
+
+		zipOutputStream2.close();
 		fileInputStream.close();
-		
+
 	}
 }
