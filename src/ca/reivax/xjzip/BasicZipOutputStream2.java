@@ -517,9 +517,6 @@ public class BasicZipOutputStream2 extends FilterOutputStream {
 
 				deflaterStream.finish();
 
-				System.out.println("CRC entry "
-						+ (crc.getValue() == deflaterStream.getCrc32()
-								.getValue()));
 				entry.setCrc(crc.getValue());
 				entry.setCompressedSize(deflaterStream.getBytesWritten());
 				entry.setSize(deflaterStream.getBytesRead());
@@ -814,6 +811,7 @@ public class BasicZipOutputStream2 extends FilterOutputStream {
 		} finally {
 			entries.clear();
 			super.close();
+			deflaterStream.close();
 		}
 	}
 
