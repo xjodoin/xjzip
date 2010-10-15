@@ -29,7 +29,7 @@ public class ParallelDeflateOutputStream extends FilterOutputStream implements
 
 		private ZStream z = new ZStream();
 
-		protected int bufsize = 1024;
+		protected int bufsize = 2048;
 		protected byte[] buf = new byte[bufsize];
 
 		private ByteArrayOutputStream in = new ByteArrayOutputStream();
@@ -69,6 +69,10 @@ public class ParallelDeflateOutputStream extends FilterOutputStream implements
 			z.avail_out = bufsize;
 			err = z.deflate(JZlib.Z_SYNC_FLUSH);
 
+			if (err != JZlib.Z_OK) {
+				throw new ZStreamException("deflating: " + z.msg);
+			}
+			
 			out.write(buf, 0, bufsize - z.avail_out);
 
 			return this;
