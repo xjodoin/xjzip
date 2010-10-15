@@ -91,15 +91,12 @@ public class ParallelDeflateOutputStream extends FilterOutputStream implements
 	private long bytesRead = 0;
 	private long bytesWritten = 0;
 	private Future<?> writeThread;
-	private ExecutorService writerExecutor;
 
 	public ParallelDeflateOutputStream(OutputStream out) {
 		super(out);
 
-		executorService = Executors.newFixedThreadPool(Runtime.getRuntime()
-				.availableProcessors());
+		executorService = Executors.newCachedThreadPool();
 
-		writerExecutor = Executors.newSingleThreadExecutor();
 
 		executorCompletionService = new ExecutorCompletionService<WorkItem>(
 				executorService);
@@ -214,11 +211,13 @@ public class ParallelDeflateOutputStream extends FilterOutputStream implements
 				private int writeItem(int writeCount, WorkItem workItem)
 						throws IOException {
 					byte[] buf = workItem.out.toByteArray();
+
 					bytesWritten += buf.length;
 					out.write(buf);
-					
-					System.out.println("Sequence write "+workItem.sequence);
-					
+
+					System.out.println("Sequence write " + workItem.sequence);
+					System.out.println("Lenght compress " + buf.length);
+
 					writeCount++;
 
 					workItem.reset();
@@ -229,7 +228,7 @@ public class ParallelDeflateOutputStream extends FilterOutputStream implements
 
 			};
 
-			writeThread = writerExecutor.submit(writer);
+			writeThread = executorService.submit(writer);
 
 		}
 
@@ -246,7 +245,6 @@ public class ParallelDeflateOutputStream extends FilterOutputStream implements
 	public void close() throws IOException {
 		super.close();
 		executorService.shutdown();
-		writerExecutor.shutdown();
 	}
 
 	public void reset() {
