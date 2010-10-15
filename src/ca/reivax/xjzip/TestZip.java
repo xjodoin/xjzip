@@ -12,10 +12,10 @@ public class TestZip {
 		FileOutputStream out = new FileOutputStream(
 				"/home/xjodoin/Bureau/test.zip");
 		ZipOutputStream2 zipOutputStream2 = new ZipOutputStream2(out);
-		zipOutputStream2.putNextEntry(new ZipEntry("backupsourcereports.zip"));
+		zipOutputStream2.putNextEntry(new ZipEntry("perfo.ods"));
 
 		FileInputStream fileInputStream = new FileInputStream(
-				"/home/xjodoin/Bureau/backupsourcereports.zip");
+				"/home/xjodoin/Bureau/perfo.ods");
 		int count = 0;
 		byte[] buf = new byte[1024];
 		while ((count = fileInputStream.read(buf)) != -1) {

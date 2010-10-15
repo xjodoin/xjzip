@@ -27,12 +27,10 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.zip.CRC32;
-import java.util.zip.Deflater;
 import java.util.zip.ZipException;
 
 import de.schlichtherle.io.FileOutputStream;
 import de.schlichtherle.io.util.LEDataOutputStream;
-import de.schlichtherle.util.zip.DefaultDeflaterStream;
 import de.schlichtherle.util.zip.DeflaterStream;
 import de.schlichtherle.util.zip.UInt;
 import de.schlichtherle.util.zip.UShort;
@@ -117,11 +115,14 @@ public class BasicZipOutputStream2 extends FilterOutputStream {
 		super(toLEDataOutputStream(out));
 		try {
 			this.deflaterStream = new ParallelDeflateOutputStream(
-					new MultipleOutputStream(super.out,new java.io.FileOutputStream("/home/xjodoin/test.compress")));
+					new MultipleOutputStream(super.out, new FileOutputStream(
+							"test.compress")));
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		// this.deflaterStream = new ParallelDeflateOutputStream(super.out);
+		// this.deflaterStream = new DefaultDeflaterStream(super.out, new
+		// Deflater(Deflater.DEFAULT_COMPRESSION, true));
 		// Check parameters (fail fast).
 		if (out == null)
 			throw new NullPointerException();
@@ -140,13 +141,7 @@ public class BasicZipOutputStream2 extends FilterOutputStream {
 	public BasicZipOutputStream2(final OutputStream out, final String charset)
 			throws NullPointerException, UnsupportedEncodingException {
 		super(toLEDataOutputStream(out));
-		try {
-			this.deflaterStream = new ParallelDeflateOutputStream(
-					new MultipleOutputStream(super.out,new java.io.FileOutputStream("/home/xjodoin/test.compress")));
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		this.deflaterStream = new ParallelDeflateOutputStream(super.out);
 
 		// Check parameters (fail fast).
 		if (out == null || charset == null)
@@ -811,6 +806,7 @@ public class BasicZipOutputStream2 extends FilterOutputStream {
 		} finally {
 			entries.clear();
 			super.close();
+			deflaterStream.close();
 		}
 	}
 

@@ -26,23 +26,25 @@ public class TestParallel {
 //		InputStream resourceAsStream = TestParallel.class
 //				.getResourceAsStream("ParallelDeflateOutputStream.cs");
 //
-//		java.io.FileOutputStream byteArrayOutputStream = new java.io.FileOutputStream("C:/testparajava.xml");
-//		ParallelDeflateOutputStream deflaterOutputStream = new ParallelDeflateOutputStream(
-//				byteArrayOutputStream);
-//
-//		{
-//			byte[] buf = new byte[128];
-//			int count = 0;
-//			while ((count = resourceAsStream.read(buf)) != -1) {
-//
-//				deflaterOutputStream.write(buf, 0, count);
-//			}
-//		}
-//
-//		deflaterOutputStream.close();
+		FileInputStream fileInputStream = new FileInputStream("/home/xjodoin/Bureau/perfo.ods");
+		
+		java.io.FileOutputStream byteArrayOutputStream = new java.io.FileOutputStream("test.compress");
+		ParallelDeflateOutputStream deflaterOutputStream = new ParallelDeflateOutputStream(
+				byteArrayOutputStream);
+
+		{
+			byte[] buf = new byte[128];
+			int count = 0;
+			while ((count = fileInputStream.read(buf)) != -1) {
+
+				deflaterOutputStream.write(buf, 0, count);
+			}
+		}
+
+		deflaterOutputStream.close();
 
 		InflaterInputStream inflaterInputStream = new InflaterInputStream(
-				new FileInputStream(new File("/home/xjodoin/test.compress")),new Inflater(true));
+				new FileInputStream(new File("test.compress")),new Inflater(true));
 
 		OutputStream outputStream = new FileOutputStream(new File("testinfjava.log"));
 
@@ -53,13 +55,19 @@ public class TestParallel {
 		
 		int totalcount = 0;
 		
+		
+		int total = 0;
+		
 		while ((count = inflaterInputStream.read(buf)) != -1) {
-
 			outputStream.write(buf, 0, count);
 			
 			totalcount+=count;
 			System.out.println("Total count "+totalcount);
 			crc32.update(buf, 0, count);
+			
+			total+=count;
+			System.out.println(total);
+			
 		}
 		
 		inflaterInputStream.close();
