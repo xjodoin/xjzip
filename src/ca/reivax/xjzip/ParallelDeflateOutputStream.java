@@ -263,9 +263,5 @@ public class ParallelDeflateOutputStream extends FilterOutputStream implements
 
 	}
 
-	@Override
-	public CRC32 getCrc32() {
-		return crc32;
-	}
 
 }
