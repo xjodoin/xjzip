@@ -48,11 +48,17 @@ public class TestParallel {
 
 		CRC32 crc32 = new CRC32();
 		
-		byte[] buf = new byte[128];
+		byte[] buf = new byte[1024];
 		int count = 0;
+		
+		int totalcount = 0;
+		
 		while ((count = inflaterInputStream.read(buf)) != -1) {
 
 			outputStream.write(buf, 0, count);
+			
+			totalcount+=count;
+			System.out.println("Total count "+totalcount);
 			crc32.update(buf, 0, count);
 		}
 		
