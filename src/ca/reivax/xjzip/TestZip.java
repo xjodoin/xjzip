@@ -1,9 +1,9 @@
 package ca.reivax.xjzip;
 
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-import de.schlichtherle.io.FileInputStream;
 import de.schlichtherle.util.zip.ZipEntry;
 
 public class TestZip {
@@ -12,10 +12,10 @@ public class TestZip {
 		FileOutputStream out = new FileOutputStream(
 				"/home/xjodoin/Bureau/test.zip");
 		ZipOutputStream2 zipOutputStream2 = new ZipOutputStream2(out);
-		zipOutputStream2.putNextEntry(new ZipEntry("tomcat.log"));
+		zipOutputStream2.putNextEntry(new ZipEntry("backupsourcereports.zip"));
 
 		FileInputStream fileInputStream = new FileInputStream(
-				"/home/xjodoin/Bureau/tomcat.log");
+				"/home/xjodoin/Bureau/backupsourcereports.zip");
 		int count = 0;
 		byte[] buf = new byte[1024];
 		while ((count = fileInputStream.read(buf)) != -1) {

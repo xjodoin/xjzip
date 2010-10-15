@@ -115,13 +115,7 @@ public class BasicZipOutputStream2 extends FilterOutputStream {
 	public BasicZipOutputStream2(final OutputStream out)
 			throws NullPointerException {
 		super(toLEDataOutputStream(out));
-		try {
-			this.deflaterStream = new ParallelDeflateOutputStream(
-					new MultipleOutputStream(super.out,new java.io.FileOutputStream("/home/xjodoin/test.compress")));
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		this.deflaterStream = new ParallelDeflateOutputStream(super.out);
 		// Check parameters (fail fast).
 		if (out == null)
 			throw new NullPointerException();
@@ -140,13 +134,7 @@ public class BasicZipOutputStream2 extends FilterOutputStream {
 	public BasicZipOutputStream2(final OutputStream out, final String charset)
 			throws NullPointerException, UnsupportedEncodingException {
 		super(toLEDataOutputStream(out));
-		try {
-			this.deflaterStream = new ParallelDeflateOutputStream(
-					new MultipleOutputStream(super.out,new java.io.FileOutputStream("/home/xjodoin/test.compress")));
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		this.deflaterStream = new ParallelDeflateOutputStream(super.out);
 
 		// Check parameters (fail fast).
 		if (out == null || charset == null)
