@@ -4,10 +4,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
@@ -15,11 +13,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.zip.CRC32;
 
 import com.jcraft.jzlib.JZlib;
 import com.jcraft.jzlib.ZStream;
@@ -109,6 +104,10 @@ public class ParallelDeflateOutputStream extends FilterOutputStream implements
 		executorCompletionService = new ExecutorCompletionService<WorkItem>(
 				executorService);
 
+		for (int i = 0; i < Runtime.getRuntime().availableProcessors(); i++) {
+			pool.add(new WorkItem());
+		}
+
 	}
 
 	@Override
@@ -116,17 +115,19 @@ public class ParallelDeflateOutputStream extends FilterOutputStream implements
 
 		startWriterThread();
 
-		WorkItem take = pool.poll();
-
-		if (take == null) {
-			take = new WorkItem();
+		WorkItem take;
+		try {
+			take = pool.take();
+			take.sequence = count;
+			ByteArrayOutputStream in = take.in;
+			in.write(b, off, len);
+			System.out.println(count);
+			count++;
+			bytesRead += len;
+			executorCompletionService.submit(take);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
 		}
-		take.sequence = count;
-		ByteArrayOutputStream in = take.in;
-		in.write(b, off, len);
-		count++;
-		bytesRead += len;
-		executorCompletionService.submit(take);
 
 	}
 
@@ -215,6 +216,9 @@ public class ParallelDeflateOutputStream extends FilterOutputStream implements
 					byte[] buf = workItem.out.toByteArray();
 					bytesWritten += buf.length;
 					out.write(buf);
+					
+					System.out.println("Sequence write "+workItem.sequence);
+					
 					writeCount++;
 
 					workItem.reset();
