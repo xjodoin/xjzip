@@ -16,6 +16,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.jcraft.jzlib.JZlib;
 import com.jcraft.jzlib.ZStream;
@@ -26,7 +27,7 @@ import de.schlichtherle.util.zip.DeflaterStream;
 public class ParallelDeflateOutputStream extends FilterOutputStream implements
 		DeflaterStream {
 
-	private static class WorkItem implements Callable<WorkItem> {
+	private class WorkItem implements Callable<WorkItem> {
 
 		private ZStream z = new ZStream();
 
@@ -45,7 +46,7 @@ public class ParallelDeflateOutputStream extends FilterOutputStream implements
 			if (in.size() == 0)
 				return this;
 
-			z.deflateInit(JZlib.Z_DEFAULT_COMPRESSION, true);
+			z.deflateInit(level.get(), true);
 
 			ByteArrayInputStream inputStream = new ByteArrayInputStream(
 					in.toByteArray());
@@ -114,6 +115,7 @@ public class ParallelDeflateOutputStream extends FilterOutputStream implements
 	private long bytesWritten = 0;
 	private Future<?> writeThread;
 	private WorkItem current;
+	private AtomicInteger level = new AtomicInteger(JZlib.Z_DEFAULT_COMPRESSION);
 
 	public ParallelDeflateOutputStream(OutputStream out) {
 		super(out);
@@ -249,9 +251,6 @@ public class ParallelDeflateOutputStream extends FilterOutputStream implements
 					bytesWritten += buf.length;
 					out.write(buf);
 
-//					System.out.println("Sequence write " + workItem.sequence);
-//					System.out.println("Lenght compress " + buf.length);
-
 					writeCount++;
 
 					workItem.reset();
@@ -297,18 +296,16 @@ public class ParallelDeflateOutputStream extends FilterOutputStream implements
 
 	@Override
 	public void setLevel(int level) {
-		// TODO Auto-generated method stub
-
+		this.level.set(level);
 	}
 
 	@Override
 	public void finish() throws IOException {
-		
-		if(current!=null)
-		{
+
+		if (current != null) {
 			deflate();
 		}
-		
+
 		writerThreadActive.set(false);
 
 		try {

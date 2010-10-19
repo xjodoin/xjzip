@@ -113,13 +113,8 @@ public class BasicZipOutputStream2 extends FilterOutputStream {
 	public BasicZipOutputStream2(final OutputStream out)
 			throws NullPointerException {
 		super(toLEDataOutputStream(out));
-		try {
-			this.deflaterStream = new ParallelDeflateOutputStream(
-					new MultipleOutputStream(super.out, new FileOutputStream(
-							"test.compress")));
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}
+		this.deflaterStream = new ParallelDeflateOutputStream(super.out);
+
 		// this.deflaterStream = new ParallelDeflateOutputStream(super.out);
 		// this.deflaterStream = new DefaultDeflaterStream(super.out, new
 		// Deflater(Deflater.DEFAULT_COMPRESSION, true));
