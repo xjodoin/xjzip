@@ -19,15 +19,16 @@ public class Main {
 
 			String path = args[0];
 
-			File file = new File(path);
-
+			File file = new File(path).getAbsoluteFile();
+			
 			if (file.exists()) {
 				String name = file.getName();
-				String nameWithoutExtention = name.substring(0,
-						name.lastIndexOf('.'));
 
+				if (file.isFile()) {
+					name = name.substring(0, name.lastIndexOf('.'));
+				}
 				FileOutputStream out = new FileOutputStream(
-						nameWithoutExtention + ".zip");
+						name + ".zip");
 				ZipOutputStream2 zipOutputStream2 = new ZipOutputStream2(out);
 
 				zip(zipOutputStream2, file.getParentFile(), file);
