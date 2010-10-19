@@ -302,19 +302,22 @@ public class ParallelDeflateOutputStream extends FilterOutputStream implements
 	@Override
 	public void finish() throws IOException {
 
-		if (current != null) {
-			deflate();
-		}
+		if (writeThread != null) {
+			
+			if (current != null) {
+				deflate();
+			}
 
-		writerThreadActive.set(false);
+			writerThreadActive.set(false);
 
-		try {
-			// wait the writter
-			writeThread.get();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		} catch (ExecutionException e) {
-			e.printStackTrace();
+			try {
+				// wait the writter
+				writeThread.get();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			} catch (ExecutionException e) {
+				e.printStackTrace();
+			}
 		}
 
 	}
