@@ -3,10 +3,9 @@ package ca.reivax.xjzip;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.zip.ZipOutputStream;
 
-import de.schlichtherle.util.zip.ZipEntry;
-
-public class TestZip {
+public class TestClassicZip {
 	public static void main(String[] args) throws NullPointerException,
 			IOException {
 		
@@ -15,8 +14,8 @@ public class TestZip {
 		
 		FileOutputStream out = new FileOutputStream(
 				"/home/xjodoin/Bureau/test.zip");
-		ZipOutputStream2 zipOutputStream2 = new ZipOutputStream2(out);
-		zipOutputStream2.putNextEntry(new ZipEntry("standalone.zip"));
+		ZipOutputStream zipOutputStream2 = new ZipOutputStream(out);
+		zipOutputStream2.putNextEntry(new java.util.zip.ZipEntry("standalone.zip"));
 
 		FileInputStream fileInputStream = new FileInputStream(
 				"/home/xjodoin/Bureau/standalone.zip");

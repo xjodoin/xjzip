@@ -249,8 +249,8 @@ public class ParallelDeflateOutputStream extends FilterOutputStream implements
 					bytesWritten += buf.length;
 					out.write(buf);
 
-					System.out.println("Sequence write " + workItem.sequence);
-					System.out.println("Lenght compress " + buf.length);
+//					System.out.println("Sequence write " + workItem.sequence);
+//					System.out.println("Lenght compress " + buf.length);
 
 					writeCount++;
 
