@@ -89,8 +89,6 @@ public class ParallelDeflateOutputStream extends FilterOutputStream implements
 				throw new ZStreamException("deflating: " + z.msg);
 			}
 
-			out.write(bufferOut, 0, bufsize - z.avail_out);
-
 			return this;
 		}
 
@@ -305,6 +303,12 @@ public class ParallelDeflateOutputStream extends FilterOutputStream implements
 
 	@Override
 	public void finish() throws IOException {
+		
+		if(current!=null)
+		{
+			deflate();
+		}
+		
 		writerThreadActive.set(false);
 
 		try {
