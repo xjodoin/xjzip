@@ -1,5 +1,6 @@
 package ca.reivax.xjzip;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
@@ -29,8 +30,9 @@ public class ParallelDeflateOutputStream extends FilterOutputStream implements
 
 		private ZStream z = new ZStream();
 
-		protected int bufsize = 2048;
-		protected byte[] buf = new byte[bufsize];
+		private int bufsize = 2048;
+		private byte[] bufferOut = new byte[bufsize];
+		private byte[] bufferIn = new byte[bufsize];
 
 		private ByteArrayOutputStream in = new ByteArrayOutputStream();
 		private ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -40,40 +42,54 @@ public class ParallelDeflateOutputStream extends FilterOutputStream implements
 		@Override
 		public WorkItem call() throws Exception {
 
-			byte[] byteArray = in.toByteArray();
-
-			if (byteArray.length == 0)
+			if (in.size() == 0)
 				return this;
 
 			z.deflateInit(JZlib.Z_DEFAULT_COMPRESSION, true);
 
+			ByteArrayInputStream inputStream = new ByteArrayInputStream(
+					in.toByteArray());
+
+			int len = 0;
 			int err;
-			z.next_in = byteArray;
-			z.next_in_index = 0;
-			z.avail_in = byteArray.length;
+
+			while ((len = inputStream.read(bufferIn)) != -1) {
+
+				z.next_in = bufferIn;
+				z.next_in_index = 0;
+				z.avail_in = len;
+
+				do {
+					z.next_out = bufferOut;
+					z.next_out_index = 0;
+					z.avail_out = bufsize;
+					err = z.deflate(JZlib.Z_NO_FLUSH);
+
+					if (err != JZlib.Z_OK) {
+						throw new ZStreamException("deflating: " + z.msg);
+					}
+					out.write(bufferOut, 0, bufsize - z.avail_out);
+				} while (z.avail_in > 0 || z.avail_out == 0);
+			}
 
 			do {
-				z.next_out = buf;
+				z.next_out = bufferOut;
 				z.next_out_index = 0;
 				z.avail_out = bufsize;
-				err = z.deflate(JZlib.Z_NO_FLUSH);
+				err = z.deflate(JZlib.Z_SYNC_FLUSH);
 
 				if (err != JZlib.Z_OK) {
 					throw new ZStreamException("deflating: " + z.msg);
 				}
-				out.write(buf, 0, bufsize - z.avail_out);
-			} while (z.avail_in > 0 || z.avail_out == 0);
 
-			z.next_out = buf;
-			z.next_out_index = 0;
-			z.avail_out = bufsize;
-			err = z.deflate(JZlib.Z_SYNC_FLUSH);
+				out.write(bufferOut, 0, bufsize - z.avail_out);
+			} while (z.avail_in > 0 || z.avail_out == 0);
 
 			if (err != JZlib.Z_OK) {
 				throw new ZStreamException("deflating: " + z.msg);
 			}
 
-			out.write(buf, 0, bufsize - z.avail_out);
+			out.write(bufferOut, 0, bufsize - z.avail_out);
 
 			return this;
 		}
@@ -82,6 +98,10 @@ public class ParallelDeflateOutputStream extends FilterOutputStream implements
 			in.reset();
 			out.reset();
 			z.deflateEnd();
+		}
+
+		public boolean isFull() {
+			return in.size() > 128 * 1024;
 		}
 	}
 
@@ -95,6 +115,7 @@ public class ParallelDeflateOutputStream extends FilterOutputStream implements
 	private long bytesRead = 0;
 	private long bytesWritten = 0;
 	private Future<?> writeThread;
+	private WorkItem current;
 
 	public ParallelDeflateOutputStream(OutputStream out) {
 		super(out);
@@ -114,21 +135,33 @@ public class ParallelDeflateOutputStream extends FilterOutputStream implements
 	public void write(byte[] b, int off, int len) throws IOException {
 
 		startWriterThread();
+		bytesRead += len;
 
-		WorkItem take;
-		try {
-			take = pool.take();
-			take.sequence = count;
-			ByteArrayOutputStream in = take.in;
-			in.write(b, off, len);
-			System.out.println(count);
-			count++;
-			bytesRead += len;
-			executorCompletionService.submit(take);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
+		if (current == null) {
+			try {
+				current = pool.take();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 		}
 
+		ByteArrayOutputStream in = current.in;
+		in.write(b, off, len);
+
+		if (current.isFull()) {
+			deflate();
+		}
+
+	}
+
+	private void deflate() {
+
+		if (current != null) {
+			current.sequence = count;
+			count++;
+			executorCompletionService.submit(current);
+			current = null;
+		}
 	}
 
 	private void startWriterThread() {
