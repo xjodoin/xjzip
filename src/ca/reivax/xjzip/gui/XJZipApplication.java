@@ -6,15 +6,25 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.PlatformUI;
 
+import de.schlichtherle.io.File;
+
 /**
  * This class controls all aspects of the application's execution
  */
 public class XJZipApplication implements IApplication {
 
+	private static File managed;
+	
 	/* (non-Javadoc)
 	 * @see org.eclipse.equinox.app.IApplication#start(org.eclipse.equinox.app.IApplicationContext)
 	 */
 	public Object start(IApplicationContext context) {
+		
+		String[] args = (String[]) context.getArguments().get(
+				"application.args");
+		
+		managed = new File(args[0]);
+		
 		Display display = PlatformUI.createDisplay();
 		try {
 			int returnCode = PlatformUI.createAndRunWorkbench(display, new ApplicationWorkbenchAdvisor());
@@ -41,5 +51,9 @@ public class XJZipApplication implements IApplication {
 					workbench.close();
 			}
 		});
+	}
+	
+	public static File getManaged() {
+		return managed;
 	}
 }

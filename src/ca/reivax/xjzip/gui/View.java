@@ -1,8 +1,12 @@
 package ca.reivax.xjzip.gui;
 
+import org.eclipse.jface.viewers.DoubleClickEvent;
+import org.eclipse.jface.viewers.IDoubleClickListener;
+import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredContentProvider;
 import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jface.viewers.LabelProvider;
+import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.swt.SWT;
@@ -11,6 +15,8 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.part.ViewPart;
+
+import de.schlichtherle.io.File;
 
 public class View extends ViewPart {
 	public static final String ID = "xjzipApp.view";
@@ -32,17 +38,22 @@ public class View extends ViewPart {
 		}
 
 		public Object[] getElements(Object parent) {
-			if (parent instanceof Object[]) {
-				return (Object[]) parent;
+			if (parent instanceof File) {
+				return ((File) parent).listFiles();
 			}
-	        return new Object[0];
+			return new Object[0];
 		}
 	}
 
 	class ViewLabelProvider extends LabelProvider implements
 			ITableLabelProvider {
 		public String getColumnText(Object obj, int index) {
-			return getText(obj);
+
+			if (obj instanceof File) {
+				return ((File) obj).getName();
+			}
+
+			return null;
 		}
 
 		public Image getColumnImage(Object obj, int index) {
@@ -50,8 +61,18 @@ public class View extends ViewPart {
 		}
 
 		public Image getImage(Object obj) {
-			return PlatformUI.getWorkbench().getSharedImages().getImage(
-					ISharedImages.IMG_OBJ_ELEMENT);
+
+			if (obj instanceof File) {
+				if (((File) obj).isDirectory()) {
+					return PlatformUI.getWorkbench().getSharedImages()
+							.getImage(ISharedImages.IMG_OBJ_FOLDER);
+				} else {
+					return PlatformUI.getWorkbench().getSharedImages()
+							.getImage(ISharedImages.IMG_OBJ_FILE);
+				}
+			}
+
+			return null;
 		}
 	}
 
@@ -65,7 +86,29 @@ public class View extends ViewPart {
 		viewer.setContentProvider(new ViewContentProvider());
 		viewer.setLabelProvider(new ViewLabelProvider());
 		// Provide the input to the ContentProvider
-		viewer.setInput(new String[] {"One", "Two", "Three"});
+		viewer.setInput(XJZipApplication.getManaged());
+
+		viewer.addDoubleClickListener(new IDoubleClickListener() {
+
+			@Override
+			public void doubleClick(DoubleClickEvent event) {
+				StructuredSelection selection = (StructuredSelection) event
+						.getSelection();
+				File firstElement = (File) selection.getFirstElement();
+				
+				if(firstElement.isDirectory())
+				{
+					viewer.setInput(firstElement);	
+				}
+				else
+				{
+					
+				}
+					
+				
+				
+			}
+		});
 	}
 
 	/**
