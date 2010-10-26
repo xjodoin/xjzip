@@ -1,8 +1,10 @@
 package ca.reivax.xjzip.gui;
 
+import java.awt.Desktop;
+import java.io.IOException;
+
 import org.eclipse.jface.viewers.DoubleClickEvent;
 import org.eclipse.jface.viewers.IDoubleClickListener;
-import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredContentProvider;
 import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jface.viewers.LabelProvider;
@@ -16,12 +18,15 @@ import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.part.ViewPart;
 
+import ca.reivax.xjzip.FileMonitor;
 import de.schlichtherle.io.File;
 
 public class View extends ViewPart {
 	public static final String ID = "xjzipApp.view";
 
 	private TableViewer viewer;
+
+	private FileMonitor monitor = new FileMonitor(500);
 
 	/**
 	 * The content provider class is responsible for providing objects to the
@@ -95,18 +100,30 @@ public class View extends ViewPart {
 				StructuredSelection selection = (StructuredSelection) event
 						.getSelection();
 				File firstElement = (File) selection.getFirstElement();
-				
-				if(firstElement.isDirectory())
-				{
-					viewer.setInput(firstElement);	
-				}
-				else
-				{
+
+				if (firstElement.isDirectory()) {
+					viewer.setInput(firstElement);
+				} else {
+					
+					try {
+						
+						java.io.File createTempFile = File.createTempFile(
+								"tmp", firstElement.getName());
+						createTempFile.deleteOnExit();
+
+						firstElement.copyTo(createTempFile);
+
+						monitor.addFile(createTempFile);
+
+						Desktop.getDesktop().edit(createTempFile);
+						
+						
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
 					
 				}
-					
-				
-				
+
 			}
 		});
 	}
