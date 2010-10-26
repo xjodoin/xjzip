@@ -1,15 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
-	<classpathentry kind="lib" path="pivot-charts-1.4.jar"/>
-	<classpathentry kind="lib" path="pivot-core-1.4.jar" sourcepath="C:/Documents and Settings/Xavier/Mes documents/Téléchargements/apache-pivot-1.4-src.zip"/>
-	<classpathentry kind="lib" path="pivot-tools-1.4.jar"/>
-	<classpathentry kind="lib" path="pivot-web-1.4.jar"/>
-	<classpathentry kind="lib" path="pivot-web-server-1.4.jar"/>
-	<classpathentry kind="lib" path="pivot-wtk-1.4.jar" sourcepath="C:/Documents and Settings/Xavier/Mes documents/Téléchargements/apache-pivot-1.4-src.zip"/>
-	<classpathentry kind="lib" path="pivot-wtk-terra-1.4.jar"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/jzlib"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/truezip"/>
+	<classpathentry kind="con" path="org.eclipse.pde.core.requiredPlugins"/>
+	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

@@ -1,0 +1,10 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: XjzipApp
+Bundle-SymbolicName: xjzipApp; singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Require-Bundle: org.eclipse.core.runtime,
+ org.eclipse.ui,
+ jzlib;bundle-version="1.0.0",
+ truezip;bundle-version="1.0.0"
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
