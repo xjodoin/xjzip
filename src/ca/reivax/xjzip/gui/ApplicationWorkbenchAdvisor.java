@@ -1,4 +1,4 @@
-package ca.reivax.xjzip;
+package ca.reivax.xjzip.gui;
 
 import org.eclipse.ui.application.IWorkbenchWindowConfigurer;
 import org.eclipse.ui.application.WorkbenchAdvisor;

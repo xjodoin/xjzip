@@ -7,7 +7,7 @@
          point="org.eclipse.core.runtime.applications">
       <application>
          <run
-               class="ca.reivax.xjzip.XJZipApplication">
+               class="ca.reivax.xjzip.gui.XJZipApplication">
          </run>
       </application>
    </extension>
@@ -15,7 +15,7 @@
          point="org.eclipse.ui.perspectives">
       <perspective
             name="Perspective"
-            class="ca.reivax.xjzip.Perspective"
+            class="ca.reivax.xjzip.gui.Perspective"
             id="xjzipApp.perspective">
       </perspective>
    </extension>
@@ -23,7 +23,7 @@
          point="org.eclipse.ui.views">
       <view
             name="View"
-            class="ca.reivax.xjzip.View"
+            class="ca.reivax.xjzip.gui.View"
             id="xjzipApp.view">
       </view>
    </extension>

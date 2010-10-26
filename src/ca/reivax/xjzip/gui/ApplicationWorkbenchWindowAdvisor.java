@@ -1,4 +1,4 @@
-package ca.reivax.xjzip;
+package ca.reivax.xjzip.gui;
 
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.ui.application.ActionBarAdvisor;

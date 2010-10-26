@@ -1,4 +1,4 @@
-package ca.reivax.xjzip;
+package ca.reivax.xjzip.gui;
 
 import org.eclipse.ui.IPageLayout;
 import org.eclipse.ui.IPerspectiveFactory;
